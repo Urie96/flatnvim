@@ -1,4 +1,4 @@
-module flatnvim
+module github.com/urie96/flatnvim
 
 go 1.19
 

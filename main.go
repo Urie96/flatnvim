@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"syscall"
 
 	"github.com/neovim/go-client/nvim"
 )
@@ -15,15 +16,15 @@ var lua string
 func main() {
 	addr := os.Getenv("NVIM")
 	if addr == "" {
-		cmd := exec.Command("nvim", os.Args[1:]...)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
+		binary, err := exec.LookPath("nvim")
+		if err != nil {
 			log.Panicln(err)
 		}
 
+		args := append([]string{"nvim"}, os.Args[1:]...)
+		env := os.Environ()
+
+		syscall.Exec(binary, args, env)
 		return
 	}
 
