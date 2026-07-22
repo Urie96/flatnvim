@@ -21,15 +21,15 @@ func main() {
 			log.Panicln(err)
 		}
 
-		args := append([]string{"nvim"}, os.Args[1:]...)
+		args := append([]string{"nvim"}, stripNoWait(os.Args[1:])...)
 		env := os.Environ()
 
 		syscall.Exec(binary, args, env)
 		return
 	}
 
-	files := os.Args[1:]
-	if len(files) == 0 {
+	args, noWait := splitNoWait(os.Args[1:])
+	if len(args) == 0 {
 		log.Panicln("no arguments given")
 	}
 
@@ -45,7 +45,7 @@ func main() {
 	})
 
 	panicOnError(err)
-	panicOnError(nv.ExecLua(lua, nil, nv.ChannelID(), files))
+	panicOnError(nv.ExecLua(lua, nil, nv.ChannelID(), args, noWait))
 
 	<-ch
 }
@@ -55,3 +55,31 @@ func panicOnError(err error) {
 		log.Panicf("error: %v\n", err)
 	}
 }
+
+// stripNoWait drops the --no-wait/-n flags so they never reach a directly
+// invoked nvim, which would reject them as unknown options.
+func stripNoWait(args []string) []string {
+	out := args[:0]
+	for _, a := range args {
+		if a == "--no-wait" || a == "-n" {
+			continue
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
+// splitNoWait separates the no-wait flags from the remaining arguments.
+func splitNoWait(args []string) ([]string, bool) {
+	noWait := false
+	var out []string
+	for _, a := range args {
+		if a == "--no-wait" || a == "-n" {
+			noWait = true
+			continue
+		}
+		out = append(out, a)
+	}
+	return out, noWait
+}
+
